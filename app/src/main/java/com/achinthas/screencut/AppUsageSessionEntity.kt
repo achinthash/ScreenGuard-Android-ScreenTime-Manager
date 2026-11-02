@@ -15,7 +15,7 @@ data class AppUsageSessionEntity(
     val day: String,
     val packageName: String,
     val appName: String,
-    val startTime: String,
-    val endTime: String,
+    val startTime: Long,
+    val endTime: Long,
     val isScreenOff: Boolean = false
 )
