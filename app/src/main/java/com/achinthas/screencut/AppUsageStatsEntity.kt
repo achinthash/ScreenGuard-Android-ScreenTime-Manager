@@ -16,6 +16,6 @@ data class AppUsageStatsEntity(
     val appName: String,
     val totalTimeMs: Long,
     val sessionsCount: Int,
-    val firstOpenAt: Long,
-    val lastOpenAt: Long
+    val firstOpenAt: Long?,
+    val lastOpenAt: Long?
 )

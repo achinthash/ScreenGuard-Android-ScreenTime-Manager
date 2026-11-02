@@ -14,7 +14,7 @@ data class PhoneUsageStatsEntity (
     val day : String,
     val totalMs : Long,
     val unlockCount : Int,
-    val firstUnlockAt : Long,
-    val lastUnlockAt : Long
+    val firstUnlockAt : Long?,
+    val lastUnlockAt : Long?
 
 )
