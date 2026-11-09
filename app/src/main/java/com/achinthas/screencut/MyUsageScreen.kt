@@ -40,6 +40,17 @@ import com.achinthas.screencut.PhoneUsageStatsEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlin.math.abs
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.outlined.DateRange
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Surface
+import androidx.compose.material3.*
+import java.time.Instant
+import java.time.ZoneId
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -154,7 +165,13 @@ fun TimelineContent() {
         verticalArrangement = Arrangement.spacedBy(5.dp)
     ) {
 
-
+        // date controller
+        DateControlBar(
+            selectedDate = selectedDate,
+            onDateSelected = { newDate ->
+                selectedDate = newDate
+            }
+        )
         // usage card
         UsageCard(
             dateText = selectedDate,
@@ -273,3 +290,134 @@ fun formatMillisToHoursAndMinutes(mills: Long):String {
 }
 
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DateControlBar(
+    selectedDate: LocalDate,
+    onDateSelected: (LocalDate) -> Unit
+
+) {
+    var showDatePicker by remember { mutableStateOf(false) }
+    val dateFormatter = remember { DateTimeFormatter.ofPattern("MMM d, yyyy") }
+
+    val today = LocalDate.now()
+    val canGoForward = selectedDate.isBefore(today)
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Previous Button
+        Surface(
+            onClick = { onDateSelected(selectedDate.minusDays(1)) },
+            modifier = Modifier.size(50.dp),
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                    contentDescription = "Previous Day",
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
+            }
+        }
+
+        if(showDatePicker){
+
+            val datePickerState = rememberDatePickerState(
+                initialSelectedDateMillis = selectedDate
+                    .atStartOfDay(ZoneId.systemDefault())
+                    .toInstant()
+                    .toEpochMilli()
+            )
+
+            DatePickerDialog(
+                onDismissRequest = { showDatePicker = false },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            datePickerState.selectedDateMillis?.let { millis ->
+                                val newDate = Instant.ofEpochMilli(millis)
+                                    .atZone(ZoneId.systemDefault())
+                                    .toLocalDate()
+                                // Optional: Prevent selecting a future date from the manual picker too
+                                if (!newDate.isAfter(today)) {
+                                    onDateSelected(newDate)
+                                }
+                            }
+                            showDatePicker = false
+                        }
+                    ) {
+                        Text("OK")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDatePicker = false }) {
+                        Text("Cancel")
+                    }
+                }
+            ) {
+                DatePicker(state = datePickerState)
+            }
+        }
+
+        // Middle Date Picker Button
+        Surface(
+            onClick = {
+
+                showDatePicker = true
+
+            },
+            modifier = Modifier
+                .weight(1f)
+                .height(50.dp),
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = selectedDate.format(dateFormatter),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Icon(
+                    imageVector = Icons.Outlined.DateRange,
+                    contentDescription = "Select Date",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+
+        // Next Button
+        Surface(
+            onClick = {
+                if(canGoForward){
+                    onDateSelected(selectedDate.plusDays(1))
+                }
+            },
+            modifier = Modifier.size(50.dp),
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = "Next Day",
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
+            }
+        }
+        //
+    }
+}
