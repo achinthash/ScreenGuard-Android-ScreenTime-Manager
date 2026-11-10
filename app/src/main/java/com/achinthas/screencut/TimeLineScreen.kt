@@ -1,5 +1,7 @@
 package com.achinthas.screencut
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,6 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -37,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -58,9 +62,11 @@ fun TimeLineScreen(){
 
     var todayUsage by remember { mutableStateOf<PhoneUsageStatsEntity?>(null) }
     var yesterdayUsage by remember { mutableStateOf<PhoneUsageStatsEntity?>(null) }
+    var appUsageSessionsData by remember { mutableStateOf<List<AppUsageSessionEntity>>(emptyList()) }
 
     val database = ApplicationDatabase.getDatabase(context)
     val phoneUsageStatsDao = database.PhoneUsageStatsDao()
+    val AppUsageSessionDao = database.AppUsageSessionDao()
 
     // fetch data from db
     LaunchedEffect(selectedDate) {
@@ -76,6 +82,9 @@ fun TimeLineScreen(){
             phoneUsageStatsDao.getByDay(previousDateStr)
         }
 
+        appUsageSessionsData = withContext(Dispatchers.IO) {
+            AppUsageSessionDao.getByDay(selectedDateStr)
+        }
     }
 
     Column(modifier = Modifier.fillMaxWidth(),
@@ -89,17 +98,63 @@ fun TimeLineScreen(){
                 selectedDate = newDate
             }
         )
-        // usage card
-        UsageCard(
-            dateText = selectedDate,
-            timeSpent = formatMillisToHoursAndMinutes(todayUsage?.totalMs ?: 0L),
-            comparisonText = calculateScreenTimeChange(
-                yesterdayUsage?.totalMs ?: 0L,
-                todayUsage?.totalMs ?: 0L,
-            ),
-            todayUnlockCount = todayUsage?.unlockCount ?: 0
-        )
 
+        // add empty data view
+        if (appUsageSessionsData.isEmpty() && todayUsage == null ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .padding(vertical = 5.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                    .border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant,
+                        shape = RoundedCornerShape(16.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.BarChart,
+                        contentDescription = null,
+                        modifier = Modifier.size(40.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "No recorded data available",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+
+        } else {
+
+            // usage card
+            UsageCard(
+                dateText = selectedDate,
+                timeSpent = formatMillisToHoursAndMinutes(todayUsage?.totalMs ?: 0L),
+                comparisonText = calculateScreenTimeChange(
+                    yesterdayUsage?.totalMs ?: 0L,
+                    todayUsage?.totalMs ?: 0L,
+                ),
+                todayUnlockCount = todayUsage?.unlockCount ?: 0
+            )
+
+            // timeline chart
+            TimeLineChart(appUsageSessionsData)
+        }
 
     }
 }
