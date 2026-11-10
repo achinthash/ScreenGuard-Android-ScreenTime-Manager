@@ -26,6 +26,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -249,7 +250,7 @@ private fun TimelineRow(
     lineColor: Color,
     modifier: Modifier = Modifier,
     dashedLine: Boolean = false,
-    cardColor: Color = Color(0xFF2A2E3D),
+    cardColor: Color =  MaterialTheme.colorScheme.surfaceContainerHigh,
     content: @Composable RowScope.() -> Unit
 ) {
     Box(
@@ -344,7 +345,7 @@ private fun AppRow(
     TimelineRow(
         time = time,
         rowHeight = 60.dp,
-        lineColor = Color.Yellow,
+        lineColor = MaterialTheme.colorScheme.primary,
         modifier = if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier
     ) {
         Column(
@@ -356,7 +357,7 @@ private fun AppRow(
             Row {
                 Text(
                     text = appName,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium
                 )
