@@ -40,37 +40,129 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import java.time.temporal.WeekFields
 import java.util.Locale
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 enum class RangeMode { DAILY, WEEKLY }
 
 @Composable
 fun SummaryScreen() {
 
+    val context = LocalContext.current
+
     var selectedDate by remember { mutableStateOf(LocalDate.now()) }
     var mode by remember { mutableStateOf(RangeMode.DAILY) }
+    val stringFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+    var appUsage by remember { mutableStateOf<List<AppUsageStatsEntity>>(emptyList()) }
 
-    Column(modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(5.dp)
+    val database = ApplicationDatabase.getDatabase(context)
+    val appUsageStatsDao = database.AppUsageStatsDao()
+
+    LaunchedEffect(selectedDate) {
+
+        val selectedDateStr = selectedDate.format(stringFormatter)
+
+        appUsage = withContext(Dispatchers.IO){
+            appUsageStatsDao.getByDay(selectedDateStr)
+        }
+    }
+
+    // date controller
+    DateControlBar(
+        selectedDate = selectedDate,
+        onDateSelected = { newDate ->
+            selectedDate = newDate
+        },
+        mode = mode,
+        onModeSelected = { newMode ->
+            mode = newMode
+        }
+    )
+
+    AppUsageList(appUsage)
+}
+
+@Composable
+fun AppUsageList(apps: List<AppUsageStatsEntity>) {
+    val totalUsageTime = apps.sumOf { it.totalTimeMs }.coerceAtLeast(1L)
+
+    LazyColumn(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(18.dp)
     ) {
+        items(apps, key = { it.id }) { app ->
+            val progress = (app.totalTimeMs.toFloat() / totalUsageTime.toFloat()).coerceIn(0f, 1f)
+            val percentage = (progress * 100).toInt()
 
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // App icon
+                AppIcon(app.packageName)
 
-        // date controller
-        DateControlBar(
-            selectedDate = selectedDate,
-            onDateSelected = { newDate ->
-                selectedDate = newDate
-            },
-            mode = mode,
-            onModeSelected = { newMode ->
-                mode = newMode
+                Spacer(modifier = Modifier.width(12.dp))
+
+                // App name and usage progress
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(7.dp)
+                ) {
+                    Text(
+                        text = app.appName,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
+                    LinearProgressIndicator(
+                        progress = { progress },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(5.dp)
+                            .clip(CircleShape),
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                // precentage
+                Column(
+                    modifier = Modifier.width(48.dp),
+                    horizontalAlignment = Alignment.End
+                ) {
+                    Text(
+                        text = formatMillisToHoursAndMinutes(app.totalTimeMs),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1
+                    )
+
+                    Text(
+                        text = "$percentage%",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1
+                    )
+                }
             }
-        )
-
-
-
+        }
     }
 }
 
