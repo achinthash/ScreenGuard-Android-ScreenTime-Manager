@@ -217,7 +217,7 @@ private fun TimelineLine(height: Dp, color: Color, dashed: Boolean) {
 }
 
 @Composable
-private fun AppIcon(packageName: String) {
+fun AppIcon(packageName: String) {
     val context = LocalContext.current
     val icon = remember(packageName) {
         if (packageName.isNotEmpty()) {
