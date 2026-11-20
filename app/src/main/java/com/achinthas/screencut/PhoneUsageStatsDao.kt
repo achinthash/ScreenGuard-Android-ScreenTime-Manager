@@ -13,4 +13,9 @@ interface PhoneUsageStatsDao {
 
     @Query("SELECT * FROM phone_usage_stats WHERE day = :day LIMIT 1")
     suspend fun getByDay(day: String): PhoneUsageStatsEntity?
+
+    @Query("SELECT * FROM phone_usage_stats WHERE day BETWEEN :startDay AND :endDate")
+    suspend fun getByWeek(startDay: String, endDate: String) : List<PhoneUsageStatsEntity>
+
+
 }
