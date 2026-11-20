@@ -1,6 +1,7 @@
 package com.achinthas.screencut
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,9 +15,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -26,7 +31,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.focus.focusModifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -35,12 +43,15 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 val ChartColors = listOf(
     Color(0xFF4285F4), // Blue
@@ -72,9 +83,16 @@ fun DailySummaryContent(selectedDate : LocalDate) {
 
     val stringFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
     var appUsage by remember { mutableStateOf<List<AppUsageStatsEntity>>(emptyList()) }
+    var phoneUsage by remember { mutableStateOf<PhoneUsageStatsEntity?>(null) }
 
     val database = ApplicationDatabase.getDatabase(context)
     val appUsageStatsDao = database.AppUsageStatsDao()
+    val phoneUsageStatsDao = database.PhoneUsageStatsDao()
+
+    val unlockCount = phoneUsage?.unlockCount ?: 0
+    val appsCount = appUsage.size
+    val fistUnlock = phoneUsage?.firstUnlockAt ?: 0
+    val lastUnlock = phoneUsage?.lastUnlockAt ?: 0
 
     LaunchedEffect(selectedDate) {
 
@@ -82,6 +100,10 @@ fun DailySummaryContent(selectedDate : LocalDate) {
 
         appUsage = withContext(Dispatchers.IO){
             appUsageStatsDao.getByDay(selectedDateStr)
+        }
+
+        phoneUsage = withContext(Dispatchers.IO){
+            phoneUsageStatsDao.getByDay(selectedDateStr)
         }
     }
 
@@ -92,6 +114,8 @@ fun DailySummaryContent(selectedDate : LocalDate) {
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+
+        StatsRow(unlocks = unlockCount, apps = appsCount, first = formatEpochToDateTimeToMin(fistUnlock), last = formatEpochToDateTimeToMin(lastUnlock), modifier = Modifier.padding(top = 14.dp))
 
         Spacer(modifier = Modifier.height(14.dp))
 
@@ -105,6 +129,48 @@ fun DailySummaryContent(selectedDate : LocalDate) {
 
 }
 
+fun formatEpochToDateTimeToMin(timeInMillis: Long): String {
+    val formatter = SimpleDateFormat("HH:mm", Locale.getDefault())
+    return formatter.format(java.util.Date(timeInMillis))
+}
+@Composable
+fun StatsRow(unlocks: Int, apps: Int, first: String, last: String, modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            .padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+
+        StatItem(unlocks.toString(), "Unlocks", Modifier.weight(1f))
+        StatDivider()
+        StatItem(apps.toString(), "Apps used", Modifier.weight(1f))
+        StatDivider()
+        StatItem(first, "First unlock", Modifier.weight(1f))
+        StatDivider()
+        StatItem(last, "Last Unlock", Modifier.weight(1f))
+    }
+}
+
+@Composable
+private fun StatItem(value: String, label: String, modifier: Modifier = Modifier) {
+    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(value, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+        Text(label, fontSize = 12.sp)
+    }
+}
+
+@Composable
+private fun StatDivider() {
+    Box(
+        Modifier
+            .width(1.dp)
+            .height(32.dp)
+            .background(MaterialTheme.colorScheme.surfaceContainerLow)
+    )
+}
 
 @Composable
 fun UsageDonutChart(
