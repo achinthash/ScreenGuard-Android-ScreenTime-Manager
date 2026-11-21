@@ -1,5 +1,7 @@
 package com.achinthas.screencut
 
+import android.content.pm.PackageManager
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -43,6 +45,9 @@ import kotlin.math.abs
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.LinearProgressIndicator
 
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -55,10 +60,17 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 
 import kotlin.math.ceil
 import kotlin.math.max
+
+data class WeeklyAppUsage(
+    val packageName: String,
+    val appName: String,
+    val totalTimeMs: Long
+)
 @Composable
 fun WeeklySummaryContent(selectedDate: LocalDate) {
 
@@ -67,6 +79,7 @@ fun WeeklySummaryContent(selectedDate: LocalDate) {
     val endOfWeek = selectedDate.with(weekFields.dayOfWeek(), 7)
     val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
+    var weeklyAppUsage by remember { mutableStateOf<List<AppUsageStatsEntity>>(emptyList()) }
 
     val context = LocalContext.current
     val database = ApplicationDatabase.getDatabase(context)
@@ -74,9 +87,8 @@ fun WeeklySummaryContent(selectedDate: LocalDate) {
     var phoneUsages by remember{ mutableStateOf<List<PhoneUsageStatsEntity>>(emptyList()) }
     var previousWeekUsages by remember{ mutableStateOf<List<PhoneUsageStatsEntity>>(emptyList()) }
 
-
     val phoneUsageStatsDao = database.PhoneUsageStatsDao()
-
+    val appUsageStatsDao = database.AppUsageStatsDao()
 
     LaunchedEffect(selectedDate) {
         val prevStart = startOfWeek.minusWeeks(1)
@@ -85,8 +97,11 @@ fun WeeklySummaryContent(selectedDate: LocalDate) {
         withContext(Dispatchers.IO) {
             phoneUsages = phoneUsageStatsDao.getByWeek(startOfWeek.format(formatter), endOfWeek.format(formatter))
             previousWeekUsages = phoneUsageStatsDao.getByWeek(prevStart.format(formatter), prevEnd.format(formatter))
+            weeklyAppUsage = appUsageStatsDao.getByWeekRange(startOfWeek.format(formatter), endOfWeek.format(formatter))
         }
     }
+
+
 
     val weekDays = (0..6).map { startOfWeek.plusDays(it.toLong()) }
 
@@ -94,11 +109,10 @@ fun WeeklySummaryContent(selectedDate: LocalDate) {
         val msByDay = phoneUsages.associate { it.day to it.totalMs }
 
         weekDays.map { date ->
-            val ms = msByDay[date.format(formatter)] ?: 0L   
+            val ms = msByDay[date.format(formatter)] ?: 0L
             (ms / 60_000L).toInt()
         }
     }
-
 
     val weeklyTotal = phoneUsages.sumOf { it.totalMs }
     val lastWeekTotal = previousWeekUsages.sumOf { it.totalMs }
@@ -107,6 +121,7 @@ fun WeeklySummaryContent(selectedDate: LocalDate) {
     val daysWithData = phoneUsages.size.coerceAtLeast(1)
     val dailyAverageMs = weeklyTotal / daysWithData
 
+    val weeklyApps: List<WeeklyAppUsage> = weeklyAppUsage.toWeeklyAppUsage()
 
     Column(modifier = Modifier
         .fillMaxSize()
@@ -125,8 +140,25 @@ fun WeeklySummaryContent(selectedDate: LocalDate) {
             minutesPerDay = minutesPerDay,
             todayIndex = weekDays.indexOf(LocalDate.now()),
             modifier = Modifier.padding(16.dp))
-    }
 
+        Spacer(modifier = Modifier.height(14.dp))
+
+        WeeklyAppUsageList(weeklyApps)
+
+    }
+}
+
+fun List<AppUsageStatsEntity>.toWeeklyAppUsage(): List<WeeklyAppUsage> {
+    return this
+        .groupBy { it.packageName }
+        .map { (packageName, statsForApp) ->
+            WeeklyAppUsage(
+                packageName = packageName,
+                appName = statsForApp.last().appName,
+                totalTimeMs = statsForApp.sumOf { it.totalTimeMs }
+            )
+        }
+        .sortedByDescending { it.totalTimeMs }
 }
 
 fun calculateWeeklyChange(lastWeekMs: Long, thisWeekMs: Long): String {
@@ -320,4 +352,79 @@ private fun axisLabel(minutes: Int): String = when {
     minutes < 60 -> "${minutes}m"
     minutes % 60 == 0 -> "${minutes / 60}h"
     else -> "${minutes / 60}h ${minutes % 60}m"
+}
+
+@Composable
+fun WeeklyAppUsageList(
+    apps: List<WeeklyAppUsage>,
+    modifier: Modifier = Modifier,
+    maxItems: Int = 500
+) {
+
+    val totalUsageTime = remember(apps) { apps.sumOf { it.totalTimeMs }.coerceAtLeast(1L) }
+    val visibleApps = remember(apps) { apps.take(maxItems) }
+
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(18.dp)
+    ) {
+        visibleApps.forEach { app ->
+            val progress = (app.totalTimeMs.toFloat() / totalUsageTime).coerceIn(0f, 1f)
+            val percentage = (progress * 100).toInt()
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                AppIcon(app.packageName)
+
+                Spacer(Modifier.width(12.dp))
+
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(7.dp)
+                ) {
+                    Text(
+                        text = app.appName,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    LinearProgressIndicator(
+                        progress = { progress },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(5.dp)
+                            .clip(CircleShape),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                }
+
+                Spacer(Modifier.width(12.dp))
+
+                Column(
+                    modifier = Modifier.widthIn(min = 56.dp),
+                    horizontalAlignment = Alignment.End
+                ) {
+                    Text(
+                        text = formatMillisToHoursAndMinutes(app.totalTimeMs),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        softWrap = false
+                    )
+                    Text(
+                        text = "$percentage%",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1
+                    )
+                }
+            }
+        }
+    }
 }
