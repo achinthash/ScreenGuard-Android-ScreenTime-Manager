@@ -20,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -41,6 +42,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.achinthas.screencut.SummaryScreen
@@ -56,7 +58,17 @@ fun MyUsageScreen() {
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("My Usage") })
+            TopAppBar(title = { Text("My Usage") },
+                actions = {
+                    TabToggle(
+                        selectedTab = selectedTab,
+                        onTabSelected = { selectedTab = it },
+                        modifier = Modifier
+                            .padding(end = 12.dp)
+                            .width(220.dp)
+                    )
+                }
+            )
         }
     ) { innerPadding ->
 
@@ -68,51 +80,6 @@ fun MyUsageScreen() {
             verticalArrangement = Arrangement.spacedBy(5.dp)
 
         ) {
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-            ) {
-
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(4.dp)
-                        .height(42.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(if (selectedTab == 0) MaterialTheme.colorScheme.primary else  MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0f),)
-                        .clickable { selectedTab = 0 },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Timeline",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = if (selectedTab == 0 ) FontWeight.Bold else FontWeight.Medium,
-                        color = if(selectedTab == 0)  MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(4.dp)
-                        .height(42.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(if (selectedTab == 1) MaterialTheme.colorScheme.primary else  MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0f),)
-                        .clickable { selectedTab = 1 },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Summary",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Medium,
-                        color = if(selectedTab == 1)  MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(1.dp))
 
             // Switch Composables
             when (selectedTab) {
@@ -128,6 +95,43 @@ fun MyUsageScreen() {
 }
 
 
+@Composable
+fun TabToggle(
+    selectedTab: Int,
+    onTabSelected: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val tabs = listOf("Timeline", "Summary")
 
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(50))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+    ) {
+        tabs.forEachIndexed { index, label ->
+            val selected = selectedTab == index
 
-
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(4.dp)
+                    .height(38.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(
+                        if (selected) MaterialTheme.colorScheme.primary
+                        else Color.Transparent
+                    )
+                    .clickable { onTabSelected(index) },
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                    color = if (selected) MaterialTheme.colorScheme.onPrimary
+                    else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
