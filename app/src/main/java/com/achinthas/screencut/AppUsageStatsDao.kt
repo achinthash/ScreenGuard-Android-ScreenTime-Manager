@@ -12,4 +12,11 @@ interface AppUsageStatsDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAppUsageStats(appUsageStatsEntity: List<AppUsageStatsEntity>): List<Long>
 
+    @Query("SELECT * FROM app_usage_stats WHERE day = :day ORDER BY totalTimeMs DESC")
+    suspend fun getByDay(day: String): List<AppUsageStatsEntity>
+
+    @Query("SELECT * FROM app_usage_stats WHERE day BETWEEN :startDate AND :endDate")
+    suspend fun getByWeekRange(startDate: String, endDate: String): List<AppUsageStatsEntity>
+
+
 }
