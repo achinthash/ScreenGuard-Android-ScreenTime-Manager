@@ -50,6 +50,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 import java.time.temporal.WeekFields
 import java.util.Locale
 
@@ -62,7 +63,15 @@ fun SelectedAppDetailScreen(
 ) {
     val context = LocalContext.current
 
-    var selectedDate by remember { mutableStateOf(LocalDate.now()) }
+    val initialDate = remember(dateStr) {
+        try {
+            LocalDate.parse(dateStr) // expects ISO format like "2026-11-23"
+        } catch (_: DateTimeParseException) {
+            LocalDate.now()
+        }
+    }
+
+    var selectedDate by remember { mutableStateOf(initialDate) }
     var mode by remember { mutableStateOf(RangeMode.DAILY) }
 
 
@@ -123,8 +132,8 @@ fun SelectedAppDetailScreen(
 
                     // switch composable modes
                     when(mode) {
-                        RangeMode.DAILY -> SelectedAppDetailDailyContents(packageName, dateStr)
-                        RangeMode.WEEKLY -> SelectedAppDetailWeeklyContents(packageName, dateStr)
+                        RangeMode.DAILY -> SelectedAppDetailDailyContents(packageName, selectedDate)
+                        RangeMode.WEEKLY -> SelectedAppDetailWeeklyContents(packageName, selectedDate)
                     }
 
                 }
