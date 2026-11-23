@@ -18,5 +18,8 @@ interface AppUsageStatsDao {
     @Query("SELECT * FROM app_usage_stats WHERE day BETWEEN :startDate AND :endDate")
     suspend fun getByWeekRange(startDate: String, endDate: String): List<AppUsageStatsEntity>
 
+    @Query("SELECT * FROM app_usage_stats WHERE packageName = :packageName AND day = :day")
+    suspend fun getPackageByDay(packageName: String,day: String): AppUsageStatsEntity?
+
 
 }
