@@ -121,17 +121,12 @@ fun SelectedAppDetailScreen(
                         }
                     )
 
+                    // switch composable modes
+                    when(mode) {
+                        RangeMode.DAILY -> SelectedAppDetailDailyContents(packageName, dateStr)
+                        RangeMode.WEEKLY -> SelectedAppDetailWeeklyContents(packageName, dateStr)
+                    }
 
-                    Text(
-                        text = packageName,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = dateStr,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
                 }
             }
         }
