@@ -2,6 +2,7 @@ package com.achinthas.screencut
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -77,7 +78,7 @@ val ChartColors = listOf(
 )
 
 @Composable
-fun DailySummaryContent(selectedDate : LocalDate) {
+fun DailySummaryContent(selectedDate : LocalDate, onAppClick: (AppUsageStatsEntity) -> Unit = {}) {
 
     val context = LocalContext.current
 
@@ -123,7 +124,7 @@ fun DailySummaryContent(selectedDate : LocalDate) {
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        AppUsageList(appUsage)
+        AppUsageList(appUsage, onAppClick = onAppClick)
 
     }
 
@@ -246,6 +247,7 @@ fun UsageDonutChart(
 @Composable
 fun AppUsageList(
     apps: List<AppUsageStatsEntity>,
+    onAppClick : (AppUsageStatsEntity) -> Unit = {},
     colors: List<Color> = ChartColors
 ) {
     val totalUsageTime = apps.sumOf { it.totalTimeMs }.coerceAtLeast(1L)
@@ -260,7 +262,8 @@ fun AppUsageList(
             val appColor = colors[index % colors.size]
 
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth()
+                    .clickable { onAppClick(app) },
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 AppIcon(app.packageName)

@@ -50,6 +50,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.drawable.toBitmap
 import java.text.SimpleDateFormat
+import java.time.LocalDate
 import java.util.Locale
 
 data class UsageSession(
@@ -61,7 +62,9 @@ data class UsageSession(
 )
 
 @Composable
-fun TimeLineChart(appUsageSessionData: List<AppUsageSessionEntity>){
+fun TimeLineChart(selectedDate : LocalDate,
+                  appUsageSessionData: List<AppUsageSessionEntity>,
+                  onAppClick: (packageName: String, selectedDate: LocalDate) -> Unit = { _, _ -> }) {
 
 
     LazyColumn(
@@ -101,7 +104,8 @@ fun TimeLineChart(appUsageSessionData: List<AppUsageSessionEntity>){
                         packageName = main?.packageName.orEmpty(),
                         durationText = durationText,
                         extraCount = (session.items.size - 1).coerceAtLeast(0),
-                        onClick = if (hasItems) ({ isExpanded = true }) else null
+                        onClick = if (hasItems) ({ isExpanded = true }) else null,
+                        onIconClick = { clickedPkg -> onAppClick(clickedPkg, selectedDate) }
                     )
                 } else {
                     // one row per sub-session
@@ -116,7 +120,8 @@ fun TimeLineChart(appUsageSessionData: List<AppUsageSessionEntity>){
                                 appName = sub.appName,
                                 packageName = sub.packageName,
                                 durationText = subDuration,
-                                onClick = { isExpanded = false }
+                                onClick = { isExpanded = false },
+                                onIconClick = { clickedPkg -> onAppClick(clickedPkg, selectedDate) }
                             )
                         }
                     }
@@ -217,7 +222,8 @@ private fun TimelineLine(height: Dp, color: Color, dashed: Boolean) {
 }
 
 @Composable
-fun AppIcon(packageName: String) {
+fun AppIcon(packageName: String,
+            onAppClick: ((String) -> Unit)? = null){
     val context = LocalContext.current
     val icon = remember(packageName) {
         if (packageName.isNotEmpty()) {
@@ -228,6 +234,13 @@ fun AppIcon(packageName: String) {
         modifier = Modifier
             .size(36.dp)
             .clip(CircleShape)
+            .then(
+                if (onAppClick != null && packageName.isNotEmpty()) {
+                    Modifier.clickable { onAppClick(packageName) } // <-- CHANGE: only icon clicks
+                } else {
+                    Modifier
+                }
+            )
             .background(Color.White),
         contentAlignment = Alignment.Center
     ) {
@@ -340,7 +353,8 @@ private fun AppRow(
     packageName: String,
     durationText: String,
     extraCount: Int = 0,
-    onClick: (() -> Unit)? = null
+    onClick: (() -> Unit)? = null,
+    onIconClick: ((String) -> Unit)? = null // <-- ADD
 ) {
     TimelineRow(
         time = time,
@@ -373,7 +387,7 @@ private fun AppRow(
             Text(text = durationText, color = Color.Gray, fontSize = 11.sp)
         }
 
-        AppIcon(packageName)
+        AppIcon(packageName, onAppClick = onIconClick )
     }
 }
 

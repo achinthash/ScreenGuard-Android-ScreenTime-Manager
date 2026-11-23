@@ -44,6 +44,7 @@ import java.util.Locale
 import kotlin.math.abs
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
@@ -72,7 +73,8 @@ data class WeeklyAppUsage(
     val totalTimeMs: Long
 )
 @Composable
-fun WeeklySummaryContent(selectedDate: LocalDate) {
+fun WeeklySummaryContent(selectedDate: LocalDate,
+                         onAppClick: (packageName: String, selectedDate: String) -> Unit = { _, _ -> }) {
 
     val weekFields = WeekFields.of(Locale.getDefault())
     val startOfWeek = selectedDate.with(weekFields.dayOfWeek(), 1)
@@ -142,8 +144,8 @@ fun WeeklySummaryContent(selectedDate: LocalDate) {
             modifier = Modifier.padding(16.dp))
 
         Spacer(modifier = Modifier.height(14.dp))
-
-        WeeklyAppUsageList(weeklyApps)
+        val weekRangeLabel = selectedDate.format(formatter)
+        WeeklyAppUsageList(weeklyApps,onAppClick = { app -> onAppClick(app.packageName, weekRangeLabel) })
 
     }
 }
@@ -358,6 +360,7 @@ private fun axisLabel(minutes: Int): String = when {
 fun WeeklyAppUsageList(
     apps: List<WeeklyAppUsage>,
     modifier: Modifier = Modifier,
+    onAppClick: (WeeklyAppUsage) -> Unit = {},
     maxItems: Int = 500
 ) {
 
@@ -373,7 +376,8 @@ fun WeeklyAppUsageList(
             val percentage = (progress * 100).toInt()
 
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth()
+                .clickable { onAppClick(app) },
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 AppIcon(app.packageName)

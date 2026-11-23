@@ -52,7 +52,7 @@ import java.time.format.DateTimeFormatter
 import java.time.temporal.TemporalAdjusters
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MyUsageScreen() {
+fun MyUsageScreen( onAppClick: (packageName: String, selectedDate: LocalDate) -> Unit = { _, _ -> } ) {
 
     var selectedTab by remember { mutableIntStateOf(0) }
 
@@ -83,8 +83,8 @@ fun MyUsageScreen() {
 
             // Switch Composables
             when (selectedTab) {
-                0 -> TimeLineScreen()
-                1 -> SummaryScreen()
+                0 -> TimeLineScreen(onAppClick = onAppClick)
+                1 -> SummaryScreen(onAppClick = onAppClick)
             }
         }
 
