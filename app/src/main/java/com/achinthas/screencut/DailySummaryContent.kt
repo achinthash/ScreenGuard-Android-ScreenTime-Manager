@@ -2,6 +2,7 @@ package com.achinthas.screencut
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,8 +19,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -43,6 +47,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -116,16 +121,65 @@ fun DailySummaryContent(selectedDate : LocalDate, onAppClick: (AppUsageStatsEnti
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
-        StatsRow(unlocks = unlockCount, apps = appsCount, first = formatEpochToDateTimeToMin(fistUnlock), last = formatEpochToDateTimeToMin(lastUnlock), modifier = Modifier.padding(top = 14.dp))
+        // empty data view
+        if (appUsage.isEmpty() && phoneUsage == null ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .padding(vertical = 5.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                    .border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant,
+                        shape = RoundedCornerShape(16.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.BarChart,
+                        contentDescription = null,
+                        modifier = Modifier.size(40.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "No recorded data available",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
 
-        Spacer(modifier = Modifier.height(14.dp))
+        } else {
+            StatsRow(
+                unlocks = unlockCount,
+                apps = appsCount,
+                first = formatEpochToDateTimeToMin(fistUnlock),
+                last = formatEpochToDateTimeToMin(lastUnlock),
+                modifier = Modifier.padding(top = 14.dp)
+            )
 
-        UsageDonutChart(appUsage, ChartColors)
+            Spacer(modifier = Modifier.height(14.dp))
 
-        Spacer(modifier = Modifier.height(14.dp))
+            UsageDonutChart(appUsage, ChartColors)
 
-        AppUsageList(appUsage, onAppClick = onAppClick)
+            Spacer(modifier = Modifier.height(14.dp))
 
+            AppUsageList(appUsage, onAppClick = onAppClick)
+
+
+        }
     }
 
 }

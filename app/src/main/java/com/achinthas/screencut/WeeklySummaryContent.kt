@@ -44,10 +44,15 @@ import java.util.Locale
 import kotlin.math.abs
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.BarChart
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 
 import androidx.compose.ui.geometry.CornerRadius
@@ -61,6 +66,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 
@@ -130,10 +136,57 @@ fun WeeklySummaryContent(selectedDate: LocalDate,
         .padding(2.dp)
         .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
-    )  {
+    ) {
+
+        // empty data view
+        if (phoneUsages.isEmpty() && weeklyAppUsage.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .padding(vertical = 5.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                    .border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant,
+                        shape = RoundedCornerShape(16.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.BarChart,
+                        contentDescription = null,
+                        modifier = Modifier.size(40.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "No recorded data available",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+
+        } else {
 
         // status summary
-        StatsRow(weeklyTotal, formatMillisToHoursAndMinutes(dailyAverageMs) , calculateWeeklyChange(lastWeekTotal, weeklyTotal) ,modifier = Modifier.padding(top = 14.dp))
+        StatsRow(
+            weeklyTotal,
+            formatMillisToHoursAndMinutes(dailyAverageMs),
+            calculateWeeklyChange(lastWeekTotal, weeklyTotal),
+            modifier = Modifier.padding(top = 14.dp)
+        )
 
         Spacer(modifier = Modifier.height(14.dp))
 
@@ -141,12 +194,15 @@ fun WeeklySummaryContent(selectedDate: LocalDate,
         WeeklyAxisBarChart(
             minutesPerDay = minutesPerDay,
             todayIndex = weekDays.indexOf(LocalDate.now()),
-            modifier = Modifier.padding(16.dp))
+            modifier = Modifier.padding(16.dp)
+        )
 
         Spacer(modifier = Modifier.height(14.dp))
         val weekRangeLabel = selectedDate.format(formatter)
-        WeeklyAppUsageList(weeklyApps,onAppClick = { app -> onAppClick(app.packageName, weekRangeLabel) })
-
+        WeeklyAppUsageList(
+            weeklyApps,
+            onAppClick = { app -> onAppClick(app.packageName, weekRangeLabel) })
+        }
     }
 }
 
