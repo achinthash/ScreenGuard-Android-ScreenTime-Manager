@@ -49,6 +49,7 @@ import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 import java.time.temporal.WeekFields
 import java.util.Locale
+import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.max
 
@@ -67,20 +68,27 @@ fun SelectedAppDetailWeeklyContents(packageName: String, selectedDate : LocalDat
     val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
     var appUsageStatsData by remember { mutableStateOf<List<AppUsageStatsEntity>>(emptyList())}
+    var previousWeekUsages by remember{ mutableStateOf<List<AppUsageStatsEntity>>(emptyList()) }
 
     LaunchedEffect(selectedDate) {
+
+        val prevStart = startOfWeek.minusWeeks(1)
+        val prevEnd = endOfWeek.minusWeeks(1)
 
         appUsageStatsData = withContext(Dispatchers.IO){
             appUsageStatsDao.getPackageByWeekRange(packageName, startOfWeek.format(formatter), endOfWeek.format(formatter))
         }
+        previousWeekUsages = withContext(Dispatchers.IO){
+            appUsageStatsDao.getPackageByWeekRange(packageName, prevStart.format(formatter), prevEnd.format(formatter))
+        }
+
     }
 
     val weeklyTotalUsage = appUsageStatsData.sumOf { it.totalTimeMs }
+    val lastWeekTotal = previousWeekUsages.sumOf { it.totalTimeMs }
     val weeklyTotalSessionCount = appUsageStatsData.sumOf { it.sessionsCount }
     val daysWithData = appUsageStatsData.size.coerceAtLeast(1)
     val dailyAverage = weeklyTotalUsage /daysWithData
-    val weeklyBusiestDay = findBusiestDay(appUsageStatsData)
-
 
     val weekDays = (0..6).map { startOfWeek.plusDays(it.toLong()) }
 
@@ -104,7 +112,7 @@ fun SelectedAppDetailWeeklyContents(packageName: String, selectedDate : LocalDat
             totalUsage = formatMillisToHoursAndMinutes(weeklyTotalUsage),
             totalSession = weeklyTotalSessionCount,
             dailyAverage = formatMillisToHoursAndMinutes(dailyAverage),
-            busiestDay = weeklyBusiestDay,
+            comparison = calculateWeeklyChanges(lastWeekTotal, weeklyTotalUsage),
             modifier = Modifier.padding(top = 14.dp)
         )
 
@@ -119,19 +127,22 @@ fun SelectedAppDetailWeeklyContents(packageName: String, selectedDate : LocalDat
 
 }
 
+private fun calculateWeeklyChanges(lastWeekMs: Long, thisWeekMs: Long): String {
+    if (lastWeekMs <= 0L) return if (thisWeekMs > 0L) "New" else "-"
 
-private fun findBusiestDay(appStatsData : List<AppUsageStatsEntity>) : Pair<String, Long>? {
+    val percentage = (thisWeekMs - lastWeekMs).toDouble() / lastWeekMs * 100.0
+    val formatted = String.format(Locale.US, "%.0f%%", abs(percentage))
 
-    return appStatsData
-        .groupBy { it.day }
-        .mapValues { (_, entries) -> entries.sumOf { it.totalTimeMs } }
-        .maxByOrNull { it.value }
-        ?.toPair()
+    return when {
+        percentage > 0.5 -> "↑ $formatted"
+        percentage < -0.5 -> "↓ $formatted"
+        else -> "0%"
+    }
 }
 
 
 @Composable
-private fun StatsRow(totalUsage: String, totalSession: Int, dailyAverage: String, busiestDay: Pair<String, Long>?, modifier: Modifier = Modifier) {
+private fun StatsRow(totalUsage: String, totalSession: Int, dailyAverage: String, comparison: String, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -141,19 +152,6 @@ private fun StatsRow(totalUsage: String, totalSession: Int, dailyAverage: String
         verticalAlignment = Alignment.CenterVertically
     ) {
 
-        val busiestDayText = remember(busiestDay) {
-            if (busiestDay == null) {
-                "-"
-            } else {
-                try {
-                    val shortDay = LocalDate.parse(busiestDay.first)
-                        .format(DateTimeFormatter.ofPattern("EEE", Locale.ENGLISH))
-                        shortDay
-                } catch (e: DateTimeParseException) {
-                    "-"
-                }
-            }
-        }
 
         StatItem(totalUsage, "Total Usage", Modifier.weight(1f))
         StatDivider()
@@ -161,7 +159,7 @@ private fun StatsRow(totalUsage: String, totalSession: Int, dailyAverage: String
         StatDivider()
         StatItem(dailyAverage, "Daily Average", Modifier.weight(1f))
         StatDivider()
-        StatItem(busiestDayText, "Busiest Day", Modifier.weight(1f))
+        StatItem(comparison, "Vs Last Week", Modifier.weight(1f))
     }
 }
 
