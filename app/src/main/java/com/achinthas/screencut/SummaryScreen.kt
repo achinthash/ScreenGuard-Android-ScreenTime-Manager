@@ -47,7 +47,7 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 enum class RangeMode { DAILY, WEEKLY }
 
 @Composable
-fun SummaryScreen() {
+fun SummaryScreen( onAppClick: (packageName: String, selectedDate: LocalDate) -> Unit = { _, _ -> }) {
 
     var selectedDate by remember { mutableStateOf(LocalDate.now()) }
     var mode by remember { mutableStateOf(RangeMode.DAILY) }
@@ -69,8 +69,14 @@ fun SummaryScreen() {
         )
 
         when(mode) {
-            RangeMode.DAILY -> DailySummaryContent(selectedDate)
-            RangeMode.WEEKLY -> WeeklySummaryContent(selectedDate)
+            RangeMode.DAILY -> DailySummaryContent(selectedDate, onAppClick = {app -> onAppClick(app.packageName, selectedDate)})
+
+            RangeMode.WEEKLY -> WeeklySummaryContent(
+            selectedDate = selectedDate,
+            onAppClick = { packageName, _ ->
+                onAppClick(packageName, selectedDate)
+            }
+        )
         }
     }
 }

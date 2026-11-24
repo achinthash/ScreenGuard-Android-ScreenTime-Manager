@@ -53,7 +53,7 @@ import kotlin.math.abs
 
 
 @Composable
-fun TimeLineScreen(){
+fun TimeLineScreen(onAppClick: (packageName: String, selectedDate: LocalDate) -> Unit = { _, _ -> }){
 
     val context = LocalContext.current
 
@@ -67,11 +67,11 @@ fun TimeLineScreen(){
     val database = ApplicationDatabase.getDatabase(context)
     val phoneUsageStatsDao = database.PhoneUsageStatsDao()
     val AppUsageSessionDao = database.AppUsageSessionDao()
-
+    val selectedDateStr = selectedDate.format(stringFormatter)
     // fetch data from db
     LaunchedEffect(selectedDate) {
 
-        val selectedDateStr = selectedDate.format(stringFormatter)
+
         val previousDateStr = selectedDate.minusDays(1).format(stringFormatter)
 
         todayUsage = withContext(Dispatchers.IO) {
@@ -153,7 +153,9 @@ fun TimeLineScreen(){
             )
 
             // timeline chart
-            TimeLineChart(appUsageSessionsData)
+            TimeLineChart( selectedDate,
+                appUsageSessionsData, onAppClick = onAppClick
+                )
         }
 
     }

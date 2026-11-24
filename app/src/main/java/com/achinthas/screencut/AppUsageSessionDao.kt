@@ -15,4 +15,7 @@ interface AppUsageSessionDao {
     @Query("SELECT * FROM app_usage_sessions WHERE day = :day ")
     suspend fun getByDay(day: String): List<AppUsageSessionEntity>
 
+    @Query("SELECT * FROM app_usage_sessions WHERE packageName = :packageName AND day = :day")
+    suspend fun getByPackageAndDay(packageName: String, day: String) : List<AppUsageSessionEntity>
+
 }

@@ -22,10 +22,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import com.achinthas.screencut.ui.theme.ScreenCutTheme
 import com.achinthas.screenguard.LimitsScreen
 import com.achinthas.screenguard.MyUsageScreen
 import com.achinthas.screenguard.SettingsScreen
+import kotlinx.serialization.Serializable
+import java.time.format.DateTimeFormatter
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -42,6 +45,12 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+
+@Serializable
+data class AppDetailRoute(
+    val packageName: String,
+    val date: String
+)
 
 @Composable
 fun MainScreen() {
@@ -78,9 +87,33 @@ fun MainScreen() {
             startDestination = Screens.MyUsage.route,
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable(Screens.MyUsage.route) { MyUsageScreen() }
+
+            //
+            composable(Screens.MyUsage.route) {
+                MyUsageScreen(
+                    onAppClick = { packageName, selectedDate ->
+                        navController.navigate(
+                            AppDetailRoute(
+                                packageName = packageName,
+                                date = selectedDate.format(DateTimeFormatter.ISO_LOCAL_DATE)
+                            )
+                        )
+                    }
+                )
+            }
+
             composable(Screens.Limits.route) { LimitsScreen() }
             composable(Screens.Settings.route) { SettingsScreen() }
+
+            //
+            composable<AppDetailRoute> { backStackEntry ->
+                val args: AppDetailRoute = backStackEntry.toRoute()
+                SelectedAppDetailScreen(
+                    packageName = args.packageName,
+                    dateStr = args.date,
+                    onBack = { navController.popBackStack() }
+                )
+            }
         }
 
     }
