@@ -119,7 +119,7 @@ fun SelectedAppDetailWeeklyContents(packageName: String, selectedDate : LocalDat
         Spacer(modifier = Modifier.height(14.dp))
 
         // weekly chart
-        WeeklyAxisBarChart(
+        WeeklyTotalAxisBarChart(
             minutesPerDay = minutesPerDay,
             todayIndex = weekDays.indexOf(LocalDate.now()),
             modifier = Modifier.padding(16.dp))
