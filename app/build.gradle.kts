@@ -75,4 +75,7 @@ dependencies {
 
     // serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+
+    // worker
+    implementation("androidx.work:work-runtime-ktx:2.12.0")
 }
