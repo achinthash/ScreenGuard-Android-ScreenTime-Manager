@@ -1,5 +1,6 @@
 package com.achinthas.screencut
 
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -23,12 +24,17 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import com.achinthas.screencut.ui.theme.ScreenCutTheme
 import com.achinthas.screenguard.LimitsScreen
 import com.achinthas.screenguard.MyUsageScreen
 import com.achinthas.screenguard.SettingsScreen
 import kotlinx.serialization.Serializable
 import java.time.format.DateTimeFormatter
+import java.util.concurrent.TimeUnit
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,6 +44,9 @@ class MainActivity : ComponentActivity() {
 
         super.onCreate(savedInstanceState)
 
+        // work manager
+        scheduleAppUsageWorker(this)
+
         setContent {
             ScreenCutTheme {
                 MainScreen()
@@ -46,11 +55,31 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+// work manager schedule
+fun scheduleAppUsageWorker(context: Context) {
+    val constraints = Constraints.Builder()
+        .setRequiresBatteryNotLow(true)
+        .build()
+
+    val usageWorkRequest = PeriodicWorkRequestBuilder<UsageWorker>(
+        repeatInterval = 20,
+        repeatIntervalTimeUnit = TimeUnit.MINUTES
+    )
+        .setConstraints(constraints)
+        .build()
+
+    WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+        "AppUsageTrackingJob",
+        ExistingPeriodicWorkPolicy.KEEP,
+        usageWorkRequest
+    )
+}
 @Serializable
 data class AppDetailRoute(
     val packageName: String,
     val date: String
 )
+
 
 @Composable
 fun MainScreen() {
